@@ -1,0 +1,5 @@
+debug
+.vscode/
+cmd/config.json
+.idea/
+isaac.iml
