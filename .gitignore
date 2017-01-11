@@ -3,3 +3,4 @@ debug
 cmd/config.json
 .idea/
 isaac.iml
+main

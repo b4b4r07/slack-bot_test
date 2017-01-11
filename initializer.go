@@ -1,4 +1,4 @@
-package isaac
+package bot
 
 import (
 	"github.com/google/go-github/github"

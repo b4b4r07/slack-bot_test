@@ -1,4 +1,4 @@
-package isaac
+package bot
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"github.com/nlopes/slack"
 )
 
-type Isaac struct {
+type Bot struct {
 	slackRTM *slack.RTM
 	slackAPI *slack.Client
 	ghAPI    *github.Client
@@ -17,11 +17,11 @@ type Isaac struct {
 	run bool
 }
 
-func Create(slackKey string) *Isaac {
+func Create(slackKey string) *Bot {
 	slack := InitializeSlack(slackKey)
 	gh := InitializeGithub()
 
-	return &Isaac{
+	return &Bot{
 		slack.NewRTM(),
 		slack,
 		gh,
@@ -30,36 +30,36 @@ func Create(slackKey string) *Isaac {
 	}
 }
 
-func (isaac *Isaac) RTM() *slack.RTM {
-	return isaac.slackRTM
+func (bot *Bot) RTM() *slack.RTM {
+	return bot.slackRTM
 }
 
-func (isaac *Isaac) SendRTM(msg, channel string) {
-	isaac.RTM().SendMessage(isaac.RTM().NewOutgoingMessage(
+func (bot *Bot) SendRTM(msg, channel string) {
+	bot.RTM().SendMessage(bot.RTM().NewOutgoingMessage(
 		msg, channel,
 	))
 }
 
 // Route adds a new route to the router of the bot
-func (isaac *Isaac) Route(trigger string, call TriggerCall, description string) {
-	isaac.router.Add(trigger, call, description)
+func (bot *Bot) Route(trigger string, call TriggerCall, description string) {
+	bot.router.Add(trigger, call, description)
 }
 
-func (isaac *Isaac) Router() *Router {
-	return isaac.router
+func (bot *Bot) Router() *Router {
+	return bot.router
 }
 
-func (isaac *Isaac) Run() error {
+func (bot *Bot) Run() error {
 
 	// start the connection manager
-	go isaac.slackRTM.ManageConnection()
+	go bot.slackRTM.ManageConnection()
 
-	for isaac.run {
+	for bot.run {
 		select {
-		case msg := <-isaac.slackRTM.IncomingEvents:
+		case msg := <-bot.slackRTM.IncomingEvents:
 			switch ev := msg.Data.(type) {
 			case *slack.MessageEvent:
-				isaac.router.Match(ev)
+				bot.router.Match(ev)
 			case *slack.ConnectedEvent:
 				fmt.Println("Connected:", ev.Info.User.Name)
 			default:
@@ -71,6 +71,6 @@ func (isaac *Isaac) Run() error {
 	return nil
 }
 
-func (isaac *Isaac) Stop() {
-	isaac.run = false
+func (bot *Bot) Stop() {
+	bot.run = false
 }

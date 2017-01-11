@@ -1,4 +1,4 @@
-package isaac
+package bot
 
 import (
 	"strings"
@@ -88,7 +88,6 @@ func (r *Router) Routes() []*StaticRoute {
 // routes
 func (r *Router) Add(name string, call TriggerCall, description string) *StaticRoute {
 	r.routes = append(r.routes, NewStaticRoute(name, call, description))
-
 	return r.routes[len(r.routes)-1]
 }
 
@@ -101,7 +100,7 @@ func (r *Router) Match(ev *slack.MessageEvent) bool {
 		return false
 	}
 
-	// check for isaac as a first word
+	// check for bot as a first word
 	if strings.ToLower(split[0]) != "bot" {
 		return false
 	}
