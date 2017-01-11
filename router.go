@@ -10,6 +10,10 @@ import (
 // as a route trigger callback
 type TriggerCall func(seq []string, msg *slack.MessageEvent)
 
+type BotInfo struct {
+	Name, Emoji, Desc string
+}
+
 // StaticRoute represents a route that only matches the
 // exact trigger
 type StaticRoute struct {
@@ -18,23 +22,25 @@ type StaticRoute struct {
 	Routes      map[string]*StaticRoute // subroutes
 	Active      bool
 	Description string
+	BotInfo     BotInfo
 }
 
 // NewStaticRoute creates and returns a new StaticRoute
-func NewStaticRoute(name string, call TriggerCall, description string) *StaticRoute {
+func NewStaticRoute(name string, call TriggerCall, description string, info BotInfo) *StaticRoute {
 	return &StaticRoute{
 		Trigger:     name,
 		Call:        call,
 		Routes:      make(map[string]*StaticRoute),
 		Active:      true,
 		Description: description,
+		BotInfo:     info,
 	}
 }
 
 // Add adds a subtrigger into the current StaticRoute. This
 // will result
-func (r *StaticRoute) Add(name string, call TriggerCall, description string) *StaticRoute {
-	r.Routes[name] = NewStaticRoute(name, call, description)
+func (r *StaticRoute) Add(name string, call TriggerCall, description string, info BotInfo) *StaticRoute {
+	r.Routes[name] = NewStaticRoute(name, call, description, info)
 	return r.Routes[name]
 }
 
@@ -86,8 +92,8 @@ func (r *Router) Routes() []*StaticRoute {
 
 // Add creates a new route for the Router and adds it to the root
 // routes
-func (r *Router) Add(name string, call TriggerCall, description string) *StaticRoute {
-	r.routes = append(r.routes, NewStaticRoute(name, call, description))
+func (r *Router) Add(name string, call TriggerCall, description string, info BotInfo) *StaticRoute {
+	r.routes = append(r.routes, NewStaticRoute(name, call, description, info))
 	return r.routes[len(r.routes)-1]
 }
 

@@ -1,7 +1,6 @@
 package gh
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -16,15 +15,16 @@ var State = map[string]string{
 // PullRequestService
 type PullRequestService struct {
 	client *github.Client
+	issues []github.Issue
 }
 
 func NewPullRequestService(client *github.Client) *PullRequestService {
-	return &PullRequestService{client}
+	return &PullRequestService{client, []github.Issue{}}
 }
 
-func (s *PullRequestService) List(owner, repo string) ([]github.Issue, error) {
+func (s *PullRequestService) List(owner, repo string) *PullRequestService {
 	if owner == "" || repo == "" {
-		return []github.Issue{}, errors.New("owner/repo invalid format")
+		return s
 	}
 
 	opt := &github.IssueListByRepoOptions{
@@ -36,7 +36,7 @@ func (s *PullRequestService) List(owner, repo string) ([]github.Issue, error) {
 	for {
 		repos, resp, err := s.client.Issues.ListByRepo(owner, repo, opt)
 		if err != nil {
-			return []github.Issue{}, err
+			return s
 		}
 		for _, v := range repos {
 			issues = append(issues, *v)
@@ -46,18 +46,19 @@ func (s *PullRequestService) List(owner, repo string) ([]github.Issue, error) {
 		}
 		opt.ListOptions.Page = resp.NextPage
 	}
-	return issues, nil
+	return &PullRequestService{s.client, issues}
 }
 
-func (s *PullRequestService) MakeParams(issues []github.Issue) slack.PostMessageParameters {
-	var Params slack.PostMessageParameters = slack.PostMessageParameters{
-		Markdown:  true,
-		Username:  "pr-bot",
-		IconEmoji: ":octocat:",
-	}
-	p := Params
+func (s *PullRequestService) MakeParams(p slack.PostMessageParameters) slack.PostMessageParameters {
+	// var Params slack.PostMessageParameters = slack.PostMessageParameters{
+	// 	Markdown:  true,
+	// 	Username:  "pr-bot",
+	// 	IconEmoji: ":octocat:",
+	// }
+	// p := Params
 	p.Attachments = []slack.Attachment{}
-	for _, issue := range issues {
+	p.Markdown = true
+	for _, issue := range s.issues {
 		labels := []string{}
 		if issue.PullRequestLinks == nil {
 			continue
