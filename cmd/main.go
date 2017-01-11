@@ -6,6 +6,7 @@ import (
 	// "strconv"
 	// "strings"
 	// "time"
+	"fmt"
 
 	"github.com/b4b4r07/slack-bot_test"
 	// "github.com/b4b4r07/slack-bot_test/codename"
@@ -19,18 +20,13 @@ import (
 )
 
 func main() {
-	// rand.Seed(time.Now().UTC().UnixNano())
-	// create github client
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: os.Getenv("GITHUB_ACCESS_TOKEN")},
 	)
 	tc := oauth2.NewClient(oauth2.NoContext, ts)
 	ghClient := github.NewClient(tc)
-
-	// labelService := gh.NewGithubLabelService(ghClient)
 	prService := gh.NewPullRequestService(ghClient)
 
-	// create bot
 	b := bot.Create(os.Getenv("SLACK_TOKEN"))
 
 	/*
@@ -112,7 +108,7 @@ func main() {
 		}, "will add default labels to target repository")
 	*/
 
-	b.Route("pr2", func(args []string, ev *slack.MessageEvent) {
+	b.Route("p-r", func(args []string, ev *slack.MessageEvent) {
 		p := slack.PostMessageParameters{
 			Username:  "pr-bot",
 			IconEmoji: ":octocat:",
@@ -139,12 +135,27 @@ func main() {
 	})
 
 	b.Route("help", func(args []string, ev *slack.MessageEvent) {
-		build := "Help page incoming:"
+		// bot.Attachements(p, "no such command", true)
+		// b.PostAttachment(ev.Channel, )
+		// build := "Help page incoming:"
+		params := slack.PostMessageParameters{}
+		params.Attachments = []slack.Attachment{}
+		params.Markdown = true
+		params.Username = route.BotInfo.Name
+		params.IconEmoji = route.BotInfo.Emoji
 		for _, route := range b.Router().Routes() {
-			build += "\n`" + route.Trigger + "` => " + route.Description
+			params.Attachments = append(params.Attachments, slack.Attachment{
+				Fallback:   "",
+				AuthorName: fmt.Sprintf("%s %s", route.BotInfo.Emoji, route.BotInfo.Name),
+				// AuthorIcon: route.BotInfo.Emoji,
+				// AuthorLink: route.BotInfo.Name,
+				Title:      "",
+				Text:       fmt.Sprintf("%s", route.Description),
+				MarkdownIn: []string{"title", "text", "fields", "fallback"},
+			})
 		}
-
-		b.SendRTM(build, ev.Channel)
+		// b.SendRTM(build, ev.Channel)
+		b.PostAttachment(ev.Channel, params)
 	}, "will print help for all routes", bot.BotInfo{
 		Name:  "help-bot",
 		Emoji: ":question:",
