@@ -29,6 +29,7 @@ func main() {
 	ghClient := github.NewClient(tc)
 
 	labelService := gh.NewGithubLabelService(ghClient)
+	prService := gh.NewPullRequestService(ghClient)
 
 	// create bot
 	b := bot.Create(os.Getenv("SLACK_TOKEN"))
@@ -109,6 +110,26 @@ func main() {
 		labelService.CreateLabels(owner, repo, gh.DefaultLabels)
 
 	}, "will add default labels to target repository")
+
+	b.Route("pr2", func(args []string, ev *slack.MessageEvent) {
+		if len(args) < 1 {
+			b.SendRTM("too few argument", ev.Channel)
+			// b.PostAttachment(ev.Channel, "", prService.MakeParams(issues))
+			return
+		}
+		switch args[0] {
+		case "list":
+			// err := b.PostMessage(ev.Channel, "", )
+			issues, err := prService.List("zplug", "zplug")
+			if err != nil {
+				return
+			}
+			err = b.PostMessage(ev.Channel, "", prService.MakeParams(issues))
+			if err != nil {
+				return
+			}
+		}
+	}, "pr-bot")
 
 	b.Route("help", func(args []string, ev *slack.MessageEvent) {
 		build := "Help page incoming:"

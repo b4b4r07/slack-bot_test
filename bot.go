@@ -34,10 +34,42 @@ func (bot *Bot) RTM() *slack.RTM {
 	return bot.slackRTM
 }
 
+// TODO: irekae
 func (bot *Bot) SendRTM(msg, channel string) {
 	bot.RTM().SendMessage(bot.RTM().NewOutgoingMessage(
 		msg, channel,
 	))
+}
+
+func (bot *Bot) PostMessage(channel, msg string, params slack.PostMessageParameters) error {
+	_, _, err := bot.slackAPI.PostMessage(channel, msg, params)
+	return err
+}
+
+func (bot *Bot) PostAttachment(channel, msg string, status bool) error {
+	_, _, err := bot.slackAPI.PostMessage(channel, "", makeAttachements(msg, status))
+	return err
+}
+
+func makeAttachements(msg string, status bool) slack.PostMessageParameters {
+	color := "danger"
+	if status {
+		color = "good"
+	}
+	params := slack.PostMessageParameters{
+		Markdown:  true,
+		Username:  "rc-bot",
+		IconEmoji: ":trollface:",
+	}
+	params.Attachments = []slack.Attachment{}
+	params.Attachments = append(params.Attachments, slack.Attachment{
+		Fallback:   "",
+		Title:      "",
+		Text:       msg,
+		MarkdownIn: []string{"title", "text", "fields", "fallback"},
+		Color:      color,
+	})
+	return params
 }
 
 // Route adds a new route to the router of the bot
@@ -50,7 +82,6 @@ func (bot *Bot) Router() *Router {
 }
 
 func (bot *Bot) Run() error {
-
 	// start the connection manager
 	go bot.slackRTM.ManageConnection()
 
