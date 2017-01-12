@@ -1,19 +1,11 @@
 package main
 
 import (
-	// "math/rand"
-	"os"
-	// "strconv"
-	// "strings"
-	// "time"
 	"fmt"
+	"os"
 
 	"github.com/b4b4r07/slack-bot_test"
-	// "github.com/b4b4r07/slack-bot_test/codename"
 	"github.com/b4b4r07/slack-bot_test/gh"
-	// "github.com/b4b4r07/slack-bot_test/healthcheck"
-	// "github.com/b4b4r07/slack-bot_test/jokes"
-	// "github.com/b4b4r07/slack-bot_test/quote"
 	"github.com/google/go-github/github"
 	"github.com/nlopes/slack"
 	"golang.org/x/oauth2"
@@ -28,86 +20,6 @@ func main() {
 	prService := gh.NewPullRequestService(ghClient)
 
 	b := bot.Create(os.Getenv("SLACK_TOKEN"))
-
-	/*
-		b.Route("joke", func(args []string, ev *slack.MessageEvent) {
-			b.SendRTM(jokes.GetRandomJoke().String(), ev.Channel)
-		}, "will resond with a random joke")
-
-		b.Route("codename", func(args []string, ev *slack.MessageEvent) {
-			b.SendRTM("Here you go: "+codename.Get(), ev.Channel)
-		}, "will generate a random codename")
-
-		b.Route("motivate", func(args []string, ev *slack.MessageEvent) {
-			b.SendRTM(quote.Get().Text, ev.Channel)
-		}, "will motivate you!")
-
-		b.Route("die", func(args []string, ev *slack.MessageEvent) {
-			b.SendRTM(":(", ev.Channel)
-			go b.Stop()
-		}, "will shut me down")
-
-		healthChecks := []*healthcheck.HealthCheck{}
-		b.Route("healthcheck", func(args []string, ev *slack.MessageEvent) {
-			if len(args) < 2 {
-				b.SendRTM("Not enought arguments: <url> <period in ms>", ev.Channel)
-				return
-			}
-
-			link := strings.Trim(args[0], "<>")
-
-			for _, check := range healthChecks {
-				if check.Target == link {
-					b.SendRTM("Healthcheck for the link already exists", ev.Channel)
-					return
-				}
-			}
-
-			dur, err := strconv.Atoi(args[1])
-			if err != nil {
-				b.SendRTM("Bad duration number provided", ev.Channel)
-				return
-			}
-
-			// dont check so fast
-			if dur < 2000 {
-				dur = 2000
-			}
-
-			c := healthcheck.NewHealthCheck(link, time.Duration(dur)*time.Millisecond)
-			c.OnChange(func() {
-				health := ""
-				if c.Healthy {
-					health = "Healthy"
-				} else {
-					health = "Down"
-				}
-				b.RTM().Reconnect()
-
-				b.SendRTM("Target "+c.Target+" Health changed to "+health+"", ev.Channel)
-			})
-
-			b.SendRTM("Added health check for link: "+link, ev.Channel)
-
-			c.Start()
-			healthChecks = append(healthChecks, c)
-		}, "will add healthcheck with period")
-
-		b.Route("label", func(args []string, ev *slack.MessageEvent) {
-			if len(args) < 2 {
-				b.SendRTM("Two arguments must be specified: owner and repository", ev.Channel)
-				return
-			}
-
-			owner := args[0]
-			repo := args[1]
-
-			labelService.RemoveAllLabels(owner, repo)
-			labelService.CreateLabels(owner, repo, gh.DefaultLabels)
-
-		}, "will add default labels to target repository")
-	*/
-
 	b.Route("p-r", func(args []string, ev *slack.MessageEvent) {
 		p := slack.PostMessageParameters{
 			Username:  "pr-bot",
@@ -135,26 +47,20 @@ func main() {
 	})
 
 	b.Route("help", func(args []string, ev *slack.MessageEvent) {
-		// bot.Attachements(p, "no such command", true)
-		// b.PostAttachment(ev.Channel, )
-		// build := "Help page incoming:"
 		params := slack.PostMessageParameters{}
 		params.Attachments = []slack.Attachment{}
 		params.Markdown = true
-		params.Username = route.BotInfo.Name
-		params.IconEmoji = route.BotInfo.Emoji
 		for _, route := range b.Router().Routes() {
+			params.Username = route.BotInfo.Name
+			params.IconEmoji = route.BotInfo.Emoji
 			params.Attachments = append(params.Attachments, slack.Attachment{
 				Fallback:   "",
 				AuthorName: fmt.Sprintf("%s %s", route.BotInfo.Emoji, route.BotInfo.Name),
-				// AuthorIcon: route.BotInfo.Emoji,
-				// AuthorLink: route.BotInfo.Name,
 				Title:      "",
 				Text:       fmt.Sprintf("%s", route.Description),
 				MarkdownIn: []string{"title", "text", "fields", "fallback"},
 			})
 		}
-		// b.SendRTM(build, ev.Channel)
 		b.PostAttachment(ev.Channel, params)
 	}, "will print help for all routes", bot.BotInfo{
 		Name:  "help-bot",
