@@ -23,6 +23,28 @@ func main() {
 
 	b := bot.Create(os.Getenv("SLACK_TOKEN"))
 
+	b.Route("help", func(args []string, ev *slack.MessageEvent) {
+		params := slack.PostMessageParameters{}
+		params.Attachments = []slack.Attachment{}
+		params.Markdown = true
+		for _, route := range b.Router().Routes() {
+			params.Username = route.BotInfo.Name
+			params.IconEmoji = route.BotInfo.Emoji
+			params.Attachments = append(params.Attachments, slack.Attachment{
+				Fallback:   "",
+				AuthorName: fmt.Sprintf("%s %s", route.BotInfo.Emoji, route.BotInfo.Name),
+				Title:      "",
+				Text:       fmt.Sprintf("%s", route.Description),
+				MarkdownIn: []string{"title", "text", "fields", "fallback"},
+			})
+		}
+		b.PostAttachment(ev.Channel, params)
+	}, "will print help for all routes", bot.BotInfo{
+		Name:  "help-bot",
+		Emoji: ":question:",
+		Desc:  "help",
+	})
+
 	b.Route("p-r", func(args []string, ev *slack.MessageEvent) {
 		p := slack.PostMessageParameters{
 			Username:  "pr-bot",
@@ -47,28 +69,6 @@ func main() {
 		Name:  "pr-bot",
 		Emoji: ":octocat:",
 		Desc:  "github pr",
-	})
-
-	b.Route("help", func(args []string, ev *slack.MessageEvent) {
-		params := slack.PostMessageParameters{}
-		params.Attachments = []slack.Attachment{}
-		params.Markdown = true
-		for _, route := range b.Router().Routes() {
-			params.Username = route.BotInfo.Name
-			params.IconEmoji = route.BotInfo.Emoji
-			params.Attachments = append(params.Attachments, slack.Attachment{
-				Fallback:   "",
-				AuthorName: fmt.Sprintf("%s %s", route.BotInfo.Emoji, route.BotInfo.Name),
-				Title:      "",
-				Text:       fmt.Sprintf("%s", route.Description),
-				MarkdownIn: []string{"title", "text", "fields", "fallback"},
-			})
-		}
-		b.PostAttachment(ev.Channel, params)
-	}, "will print help for all routes", bot.BotInfo{
-		Name:  "help-bot",
-		Emoji: ":question:",
-		Desc:  "help",
 	})
 
 	b.Route("travis2", func(args []string, ev *slack.MessageEvent) {
@@ -98,13 +98,13 @@ func main() {
 			}
 			break
 		case "rebuild":
-			id, err := travis.RestartLastBuild("zplug/zplug")
-			if err == nil {
-				b.PostAttachment(ev.Channel, bot.Attachements(
-					p,
-					fmt.Sprintf("Restart the last build <https://travis-ci.org/zplug/zplug/builds/%d|%d> successfully", id, id),
-					true,
-				))
+			if id, err := travis.RestartLastBuild("zplug/zplug"); err == nil {
+				b.PostAttachment(
+					ev.Channel,
+					bot.Attachements(p,
+						fmt.Sprintf("Restart the last build <https://travis-ci.org/zplug/zplug/builds/%d|%d> successfully", id, id),
+						true),
+				)
 			} else {
 				b.PostAttachment(ev.Channel, bot.Attachements(p, err.Error(), false))
 			}
