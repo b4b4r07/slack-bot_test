@@ -2,7 +2,12 @@ package bot
 
 import (
 	"fmt"
+	"log"
+	"regexp"
+	"strconv"
+	"strings"
 
+	"github.com/b4b4r07/slack-bot_test/travis"
 	"github.com/google/go-github/github"
 	"github.com/nlopes/slack"
 )
@@ -87,6 +92,24 @@ func (bot *Bot) Router() *Router {
 	return bot.router
 }
 
+func (bot *Bot) Hear(ev *slack.MessageEvent) error {
+	var re *regexp.Regexp = regexp.MustCompile(`New comment by .*/pulls?/(\d+)`)
+	for _, attachment := range ev.Attachments {
+		if !strings.Contains(attachment.Text, "retest gotcha") {
+			continue
+		}
+		pat := re.FindStringSubmatch(attachment.Pretext)
+		if len(pat) < 2 {
+			break
+		}
+		n, _ := strconv.Atoi(pat[1])
+		if err := travis.RestartBuildFromPR("zplug/zplug", n); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (bot *Bot) Run() error {
 	// start the connection manager
 	go bot.slackRTM.ManageConnection()
@@ -96,6 +119,10 @@ func (bot *Bot) Run() error {
 		case msg := <-bot.slackRTM.IncomingEvents:
 			switch ev := msg.Data.(type) {
 			case *slack.MessageEvent:
+				if ev.SubType == "bot_message" {
+					bot.Hear(ev)
+					break
+				}
 				bot.router.Match(ev)
 			case *slack.ConnectedEvent:
 				fmt.Println("Connected:", ev.Info.User.Name)

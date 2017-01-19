@@ -107,6 +107,26 @@ func RestartLastBuild(slug string) (uint, error) {
 	return repo.LastBuildId, err
 }
 
+func RestartBuildFromPR(slug string, n int) error {
+	var id uint
+	builds, _, _, _, err := client.Builds.ListFromRepository(
+		slug,
+		&travis.BuildListOptions{EventType: "pull_request"},
+	)
+	if err != nil {
+		return err
+	}
+	for _, build := range builds {
+		if build.PullRequestNumber == uint(n) {
+			id = build.Id
+			break
+		}
+	}
+
+	_, err = client.Builds.Restart(id)
+	return err
+}
+
 func (rs RepoState) MakeParams(p slack.PostMessageParameters) slack.PostMessageParameters {
 	p.Attachments = []slack.Attachment{}
 	p.Markdown = true
@@ -140,5 +160,4 @@ func (rs RepoState) MakeParams(p slack.PostMessageParameters) slack.PostMessageP
 	})
 
 	return p
-
 }
